@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlanAI - 智能目标拆解</title>
+    <style>
+        /* ── 全局重置与基础样式 ── */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --radius: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* ── 容器 ── */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* ── 导航栏 ── */
+        .navbar {
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: var(--radius);
+            margin-bottom: 16px;
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .navbar-brand span {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-user {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* ── 卡片 ── */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            padding: 32px;
+            margin-bottom: 16px;
+        }
+
+        .card-header {
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .card-subtitle {
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-size: 0.9rem;
+        }
+
+        /* ── 表单 ── */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            outline: none;
+            background: var(--bg);
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            background: var(--card-bg);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* ── 按钮 ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* ── 消息提示 ── */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: var(--danger);
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: #059669;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* ── 标签页切换 ── */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 10px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* ── 目标列表 ── */
+        .goal-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .goal-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--card-bg);
+        }
+
+        .goal-item:hover {
+            border-color: var(--primary);
+            box-shadow: var(--shadow);
+            transform: translateY(-1px);
+        }
+
+        .goal-item-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .goal-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-active {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .badge-completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge-high {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .badge-medium {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        .badge-low {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        /* ── 任务列表 ── */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .task-item.done {
+            opacity: 0.6;
+            background: #f8fafc;
+        }
+
+        .task-item.done .task-title {
+            text-decoration: line-through;
+        }
+
+        .task-item.next-task {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin-top: 2px;
+        }
+
+        .task-checkbox:hover {
+            border-color: var(--primary);
+        }
+
+        .task-checkbox.checked {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+            font-size: 12px;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .task-why {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .task-step {
+            font-weight: 700;
+            color: var(--primary);
+            min-width: 30px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .task-estimate {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ── 进度条 ── */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin: 16px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #a855f7);
+            border-radius: 4px;
+            transition: width 0.4s ease;
+        }
+
+        .progress-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        /* ── 加载动画 ── */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 16px;
+            color: var(--text-secondary);
+        }
+
+        .loading-overlay .spinner {
+            width: 40px;
+            height: 40px;
+            border-width: 3px;
+            border-top-color: var(--primary);
+        }
+
+        /* ── 空状态 ── */
+        .empty-state {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        /* ── 返回按钮 ── */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        /* ── 重新规划区域 ── */
+        .regenerate-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid var(--border);
+        }
+
+        .regenerate-section .form-label {
+            font-size: 0.9rem;
+        }
+
+        /* ── 隐藏 ── */
+        .hidden {
+            display: none !important;
+        }
+
+        /* ── 响应式 ── */
+        @media (max-width: 600px) {
+            .card {
+                padding: 20px 16px;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- ── 页面内容由 JS 动态渲染 ── -->
+    </div>
+
+    <script>
+        /* ============================================================
+           PlanAI 前端 — 单页应用
+           所有 API 请求发往同源后端（由 FastAPI 静态文件挂载提供）
+           ============================================================ */
+
+        // ── 全局常量 ──
+        const API_BASE = '';  // 同源请求，无需写完整 URL
+
+        // ── 工具函数 ──
+        function getToken() {
+            return localStorage.getItem('planai_token');
+        }
+
+        function setToken(token) {
+            localStorage.setItem('planai_token', token);
+        }
+
+        function clearToken() {
+            localStorage.removeItem('planai_token');
+        }
+
+        function getUsername() {
+            return localStorage.getItem('planai_username');
+        }
+
+        function setUsername(name) {
+            localStorage.setItem('planai_username', name);
+        }
+
+        /** 封装 fetch 请求，自动处理 JSON 和错误 */
+        async function api(path, options = {}) {
+            const token = getToken();
+            const headers = options.headers || {};
+
+            // 如果不是 FormData，默认设 Content-Type
+            if (!(options.body instanceof FormData)) {
+                headers['Content-Type'] = 'application/json';
+            }
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(`${API_BASE}${path}`, {
+                ...options,
+                headers,
+            });
+
+            // 如果是 204 No Content
+            if (response.status === 204) {
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const detail = data.detail || response.statusText;
+                throw new Error(detail);
+            }
+
+            return data;
+        }
+
+        /** 显示短消息提示（简易 toast） */
+        function showToast(message, type = 'error') {
+            // 移除已有 toast
+            const existing = document.querySelector('.toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `alert alert-${type} toast`;
+            toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;max-width:400px;animation:slideIn 0.3s ease;';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 注入 toast 动画
+        const toastStyle = document.createElement('style');
+        toastStyle.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(toastStyle);
+
+        // ── 路由/视图管理 ──
+        const app = document.getElementById('app');
+
+        function render(view) {
+            app.innerHTML = '';
+            view();
+        }
+
+        /** 检查登录状态，未登录则跳转登录页 */
+        function requireAuth() {
+            if (!getToken()) {
+                renderLoginPage();
+                return false;
+            }
+            return true;
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  登录 / 注册页面
+        // ════════════════════════════════════════════════════════
+
+        function renderLoginPage() {
+            clearToken();
+            app.innerHTML = `
+                <div class="card" style="max-width:420px;margin:60px auto;">
+                    <div class="card-header" style="text-align:center;">
+                        <div class="card-title">🚀 PlanAI</div>
+                        <div class="card-subtitle">AI 驱动的目标拆解工具</div>
+                    </div>
+
+                    <div id="login-alert"></div>
+
+                    <div class="tabs" id="auth-tabs">
+                        <div class="tab active" data-tab="login">登录</div>
+                        <div class="tab" data-tab="register">注册</div>
+                    </div>
+
+                    <!-- 登录表单 -->
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label class="form-label">用户名</label>
+                            <input class="form-input" type="text" id="login-username" placeholder="输入用户名" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">密码</label>
+                            <input class="form-input" type="password" id="login-password" placeholder="输入密码" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="login-btn">
+                            登录
+                        </button>
+                    </form>
+
+                    <!-- 注册表单（默认隐藏） -->
+                    <form id="register-form" class="hidden">
+                        <div class="form-group">
+                            <label class="form-label">用户名</label>
+                            <input class="form-input" type="text" id="reg-username" placeholder="输入用户名" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">密码</label>
+                            <input class="form-input" type="password" id="reg-password" placeholder="输入密码（至少6位）" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="reg-btn">
+                            注册
+                        </button>
+                    </form>
+                </div>
+            `;
+
+            // 标签页切换
+            document.getElementById('auth-tabs').addEventListener('click', (e) => {
+                if (!e.target.classList.contains('tab')) return;
+                const tab = e.target.dataset.tab;
+
+                document.querySelectorAll('#auth-tabs .tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+
+                document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+                document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+                document.getElementById('login-alert').innerHTML = '';
+            });
+
+            // 登录
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('login-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> 登录中...';
+
+                try {
+                    // 登录用表单格式
+                    const formData = new URLSearchParams();
+                    formData.append('username', document.getElementById('login-username').value);
+                    formData.append('password', document.getElementById('login-password').value);
+
+                    const response = await fetch(`${API_BASE}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData.toString(),
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.detail || '登录失败');
+                    }
+
+                    setToken(data.access_token);
+                    setUsername(document.getElementById('login-username').value);
+                    renderMainPage();
+                } catch (err) {
+                    document.getElementById('login-alert').innerHTML =
+                        `<div class="alert alert-error">${err.message}</div>`;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '登录';
+                }
+            });
+
+            // 注册
+            document.getElementById('register-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('reg-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> 注册中...';
+
+                try {
+                    await api('/auth/register', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            username: document.getElementById('reg-username').value,
+                            password: document.getElementById('reg-password').value,
+                        }),
+                    });
+
+                    document.getElementById('login-alert').innerHTML =
+                        '<div class="alert alert-success">注册成功！请切换到登录标签页登录。</div>';
+
+                    // 自动切回登录
+                    document.querySelector('#auth-tabs .tab[data-tab="login"]').click();
+                    document.getElementById('login-username').value = document.getElementById('reg-username').value;
+                } catch (err) {
+                    document.getElementById('login-alert').innerHTML =
+                        `<div class="alert alert-error">${err.message}</div>`;
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '注册';
+                }
+            });
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  主页面 — 目标列表
+        // ════════════════════════════════════════════════════════
+
+        async function renderMainPage() {
+            if (!requireAuth()) return;
+
+            app.innerHTML = `
+                <!-- 导航栏 -->
+                <div class="navbar">
+                    <div class="navbar-brand">
+                        🚀 <span>PlanAI</span>
+                    </div>
+                    <div class="navbar-actions">
+                        <span class="navbar-user">👤 ${escapeHtml(getUsername())}</span>
+                        <button class="btn btn-outline btn-sm" id="logout-btn">退出</button>
+                    </div>
+                </div>
+
+                <!-- 创建目标 -->
+                <div class="card">
+                    <div class="card-title" style="font-size:1.1rem;margin-bottom:12px;">🎯 创建新目标</div>
+                    <div id="create-alert"></div>
+                    <form id="create-goal-form" style="display:flex;gap:8px;">
+                        <input class="form-input" type="text" id="goal-title-input"
+                               placeholder="例如：一个月学会 Python 后端开发"
+                               style="flex:1;" required>
+                        <button type="submit" class="btn btn-primary" id="create-btn">
+                            ✨ AI 拆解
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 目标列表 -->
+                <div class="card">
+                    <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;">📋 我的目标</div>
+                    <div id="goal-list-container">
+                        <div class="loading-overlay">
+                            <div class="spinner"></div>
+                            <span>加载中...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 退出登录
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                clearToken();
+                renderLoginPage();
+            });
+
+            // 创建目标
+            document.getElementById('create-goal-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById('create-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> AI 思考中，请等待...';
+
+                try {
+                    const title = document.getElementById('goal-title-input').value.trim();
+                    await api('/goals/', {
+                        method: 'POST',
+                        body: JSON.stringify({ title }),
+                    });
+                    document.getElementById('goal-title-input').value = '';
+                    document.getElementById('create-alert').innerHTML =
+                        '<div class="alert alert-success">目标创建成功！AI 已完成任务拆解。</div>';
+                    setTimeout(() => {
+                        document.getElementById('create-alert').innerHTML = '';
+                    }, 3000);
+                    await loadGoalList();
+                } catch (err) {
+                    document.getElementById('create-alert').innerHTML =
+                        `<div class="alert alert-error">${err.message}</div>`;
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '✨ AI 拆解';
+                }
+            });
+
+            await loadGoalList();
+        }
+
+        /** 加载并渲染目标列表 */
+        async function loadGoalList() {
+            const container = document.getElementById('goal-list-container');
+            if (!container) return;
+
+            try {
+                const goals = await api('/goals/?skip=0&limit=50');
+
+                if (goals.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <p>还没有目标，在上方输入第一个目标开始吧！</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = '<div class="goal-list"></div>';
+                const list = container.querySelector('.goal-list');
+
+                goals.forEach(goal => {
+                    const doneCount = goal.tasks.filter(t => t.status === 'done').length;
+                    const totalCount = goal.tasks.length;
+                    const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+                    const item = document.createElement('div');
+                    item.className = 'goal-item';
+                    item.innerHTML = `
+                        <div style="flex:1;">
+                            <div class="goal-item-title">${escapeHtml(goal.title)}</div>
+                            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;font-size:0.85rem;color:var(--text-secondary);">
+                                <span class="badge ${goal.status === 'completed' ? 'badge-completed' : 'badge-active'}">
+                                    ${goal.status === 'completed' ? '✅ 已完成' : '🔄 进行中'}
+                                </span>
+                                <span>${doneCount}/${totalCount} 个任务完成</span>
+                            </div>
+                        </div>
+                        <div class="goal-item-meta">
+                            <span style="font-weight:700;color:var(--primary);">${percent}%</span>
+                            <span style="color:var(--text-secondary);">→</span>
+                        </div>
+                    `;
+                    item.addEventListener('click', () => renderGoalDetail(goal.id));
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                container.innerHTML =
+                    `<div class="alert alert-error">加载失败：${err.message}</div>`;
+            }
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  目标详情页 — 任务列表
+        // ════════════════════════════════════════════════════════
+
+        async function renderGoalDetail(goalId) {
+            if (!requireAuth()) return;
+
+            app.innerHTML = `
+                <div class="navbar">
+                    <div class="navbar-brand">🚀 <span>PlanAI</span></div>
+                    <div class="navbar-actions">
+                        <span class="navbar-user">👤 ${escapeHtml(getUsername())}</span>
+                        <button class="btn btn-outline btn-sm" id="logout-btn">退出</button>
+                    </div>
+                </div>
+
+                <button class="back-link" id="back-btn">← 返回目标列表</button>
+
+                <div id="detail-content">
+                    <div class="loading-overlay">
+                        <div class="spinner"></div>
+                        <span>加载任务详情...</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('back-btn').addEventListener('click', renderMainPage);
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                clearToken();
+                renderLoginPage();
+            });
+
+            await loadGoalDetail(goalId);
+        }
+
+        /** 加载并渲染目标详情 */
+        async function loadGoalDetail(goalId) {
+            const container = document.getElementById('detail-content');
+            if (!container) return;
+
+            try {
+                const goal = await api(`/goals/${goalId}`);
+                const doneCount = goal.tasks.filter(t => t.status === 'done').length;
+                const totalCount = goal.tasks.length;
+                const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+                // 找下一个未完成任务
+                let nextTask = null;
+                try {
+                    const nextData = await api(`/goals/${goalId}/next`);
+                    // 返回的可能是 TaskOut 对象或 {message: "全部完成"}
+                    if (nextData && nextData.id) {
+                        nextTask = nextData.id;
+                    }
+                } catch (e) { /* 忽略 */ }
+
+                container.innerHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                                <div>
+                                    <div class="card-title">${escapeHtml(goal.title)}</div>
+                                    <span class="badge ${goal.status === 'completed' ? 'badge-completed' : 'badge-active'}">
+                                        ${goal.status === 'completed' ? '✅ 已完成' : '🔄 进行中'}
+                                    </span>
+                                </div>
+                                ${goal.status !== 'completed' && nextTask ? `
+                                    <button class="btn btn-outline btn-sm" id="focus-next-btn">
+                                        👇 定位到下一步
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- 进度条 -->
+                        <div class="progress-text">进度：${doneCount} / ${totalCount} （${percent}%）</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:${percent}%;"></div>
+                        </div>
+
+                        <!-- 任务列表 -->
+                        <div class="task-list" id="task-list-container"></div>
+
+                        <!-- 重新规划 -->
+                        <div class="regenerate-section">
+                            <div style="font-weight:600;margin-bottom:8px;">🔄 重新规划</div>
+                            <div id="regen-alert"></div>
+                            <form id="regen-form" style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <input class="form-input form-textarea" type="text" id="regen-feedback"
+                                       placeholder="对当前计划有什么不满意？告诉 AI（可选）"
+                                       style="flex:1;min-width:200px;">
+                                <button type="submit" class="btn btn-warning" id="regen-btn"
+                                        style="background:var(--warning);color:white;">
+                                    ♻ 重新规划
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+                // 渲染任务列表
+                renderTaskList(goal.tasks, goalId, nextTask, goal.status);
+
+                // 定位下一步按钮
+                const focusBtn = document.getElementById('focus-next-btn');
+                if (focusBtn) {
+                    focusBtn.addEventListener('click', () => {
+                        const nextEl = document.querySelector('.task-item.next-task');
+                        if (nextEl) {
+                            nextEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            nextEl.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.3)';
+                            setTimeout(() => { nextEl.style.boxShadow = ''; }, 1500);
+                        }
+                    });
+                }
+
+                // 重新规划
+                document.getElementById('regen-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById('regen-btn');
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner"></span> AI 重新规划中...';
+
+                    try {
+                        const feedback = document.getElementById('regen-feedback').value.trim();
+                        const updated = await api(`/goals/${goalId}/regenerate`, {
+                            method: 'POST',
+                            body: JSON.stringify({ feedback: feedback || null }),
+                        });
+                        // 重新加载页面
+                        await loadGoalDetail(goalId);
+                    } catch (err) {
+                        document.getElementById('regen-alert').innerHTML =
+                            `<div class="alert alert-error">${err.message}</div>`;
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerHTML = '♻ 重新规划';
+                    }
+                });
+
+            } catch (err) {
+                container.innerHTML =
+                    `<div class="alert alert-error">加载失败：${err.message}
+                        <br><button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="renderMainPage()">← 返回列表</button>
+                    </div>`;
+            }
+        }
+
+        /** 渲染任务卡片列表 */
+        function renderTaskList(tasks, goalId, nextTaskId, goalStatus) {
+            const container = document.getElementById('task-list-container');
+            if (!container) return;
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>暂无任务</p></div>';
+                return;
+            }
+
+            // 按 step_order 排序
+            const sorted = [...tasks].sort((a, b) => a.step_order - b.step_order);
+
+            container.innerHTML = sorted.map(task => {
+                const isDone = task.status === 'done';
+                const isNext = !isDone && goalStatus !== 'completed' && task.id === nextTaskId;
+                const priorityLabels = { high: '🔴 高', medium: '🟡 中', low: '🟢 低' };
+                const priorityLabel = priorityLabels[task.priority] || task.priority;
+                const mins = task.estimated_minutes;
+                const timeStr = mins >= 60
+                    ? `${Math.floor(mins / 60)}小时${mins % 60 > 0 ? mins % 60 + '分钟' : ''}`
+                    : `${mins}分钟`;
+
+                return `
+                    <div class="task-item ${isDone ? 'done' : ''} ${isNext ? 'next-task' : ''}"
+                         data-task-id="${task.id}">
+                        <div class="task-step">${String(task.step_order).padStart(2, '0')}</div>
+                        <div class="task-checkbox ${isDone ? 'checked' : ''}"
+                             data-task-id="${task.id}"
+                             data-goal-id="${goalId}"
+                             data-current="${task.status}"
+                             title="${isDone ? '已完成' : '点击标记完成'}">
+                            ${isDone ? '✓' : ''}
+                        </div>
+                        <div class="task-content">
+                            <div class="task-title">
+                                ${isNext ? '👉 ' : ''}${escapeHtml(task.title)}
+                                ${isNext ? ' <span style="font-size:0.75rem;color:var(--primary);font-weight:700;">（下一步）</span>' : ''}
+                            </div>
+                            ${task.why_explanation ? `<div class="task-why">💡 ${escapeHtml(task.why_explanation)}</div>` : ''}
+                            <div class="task-meta">
+                                <span class="badge badge-${task.priority}">${priorityLabel}</span>
+                                <span class="task-estimate">⏱ ${timeStr}</span>
+                                ${task.status === 'in_progress' ? '<span style="color:var(--warning);">🔧 进行中</span>' : ''}
+                            </div>
+                        </div>
+                        ${!isDone ? `
+                            <button class="btn btn-sm ${task.status === 'in_progress' ? 'btn-outline' : 'btn-outline'}"
+                                    data-action="start"
+                                    data-task-id="${task.id}"
+                                    data-goal-id="${goalId}"
+                                    style="white-space:nowrap;font-size:0.75rem;"
+                                    title="标记为进行中">
+                                ${task.status === 'in_progress' ? '⏳' : '▶'}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // 绑定复选框事件
+            container.querySelectorAll('.task-checkbox').forEach(cb => {
+                cb.addEventListener('click', async function () {
+                    if (this.classList.contains('checked')) return; // 已完成的不再处理
+                    const taskId = this.dataset.taskId;
+                    const gId = this.dataset.goalId;
+                    await toggleTaskStatus(gId, taskId, 'done');
+                });
+            });
+
+            // 绑定"开始"按钮
+            container.querySelectorAll('[data-action="start"]').forEach(btn => {
+                btn.addEventListener('click', async function (e) {
+                    e.stopPropagation();
+                    const taskId = this.dataset.taskId;
+                    const gId = this.dataset.goalId;
+                    await toggleTaskStatus(gId, taskId, 'in_progress');
+                });
+            });
+        }
+
+        /** 切换任务状态 */
+        async function toggleTaskStatus(goalId, taskId, newStatus) {
+            try {
+                await api(`/goals/${goalId}/tasks/${taskId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: newStatus }),
+                });
+                showToast(newStatus === 'done' ? '✅ 任务已完成！' : '🔧 已标记为进行中', 'success');
+                // 重新加载详情
+                await loadGoalDetail(goalId);
+            } catch (err) {
+                showToast(`操作失败：${err.message}`, 'error');
+            }
+        }
+
+        /** HTML 转义，防 XSS */
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ════════════════════════════════════════════════════════
+        //  启动 — 根据登录状态决定显示哪个页面
+        // ════════════════════════════════════════════════════════
+
+        if (getToken()) {
+            renderMainPage();
+        } else {
+            renderLoginPage();
+        }
+    </script>
+</body>
+</html>
